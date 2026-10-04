@@ -3,14 +3,14 @@
 #include <vector>
 
 #include "cxxopts.hpp"
-
-// Add your own problems here
+#include "problem.hpp"
 #include "problems/sum.hpp"
+#include "problems/dfa.hpp"
 
 int runProblem(int argc, char* argv[]) {
-    // Add your own problems here
-    std::vector<Problem *> problems;
+    std::vector<Problem*> problems;
     problems.push_back(new SumProblem());
+    problems.push_back(new DFAProblem());
 
     cxxopts::Options options("project", "Run the specific problem");
 
@@ -18,7 +18,7 @@ int runProblem(int argc, char* argv[]) {
         ("i,input", "Input file name", cxxopts::value<std::string>())
         ("o,output", "Output file name", cxxopts::value<std::string>())
         ("h,help", "Print usage");
-    
+
     for (Problem *p : problems) {
         p->initialize_parser(options);
     }
@@ -27,12 +27,14 @@ int runProblem(int argc, char* argv[]) {
 
     for (Problem *p : problems) {
         if (p->is_chosen_problem(args)) {
-            p->run(args);
-            return 0;
+            int ret = p->run(args);
+            for (Problem *ptr : problems) delete ptr;
+            return ret;
         }
     }
 
     std::cout << options.help() << std::endl;
+    for (Problem *ptr : problems) delete ptr;
     return 0;
 }
 
