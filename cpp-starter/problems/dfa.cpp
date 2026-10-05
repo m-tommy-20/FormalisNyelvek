@@ -48,6 +48,7 @@ bool DFAProblem::load_from_file(const std::string &filename) {
     return false;
   }
   start_state = line;
+  // Trim leading/trailing whitespace
   start_state.erase(0, start_state.find_first_not_of(" \t\r\n"));
   start_state.erase(start_state.find_last_not_of(" \t\r\n") + 1);
 
@@ -62,16 +63,24 @@ bool DFAProblem::load_from_file(const std::string &filename) {
   }
 
   while (std::getline(file, line)) {
+    // Skip empty lines
     if (line.empty())
       continue;
 
     std::istringstream transition_stream(line);
     std::string current_state, symbol, next_state;
 
+    // Parse: current_state input_symbol next_state
+    // We expect exactly 3 space-separated tokens
     if (!(transition_stream >> current_state >> symbol >> next_state)) {
+      // If parsing fails, skip this line and continue
+      // This handles malformed or comment lines gracefully
       continue;
     }
 
+    // Store the transition in our map
+    // Key: pair of (current_state, symbol)
+    // Value: next_state
     transitions[{current_state, symbol}] = next_state;
   }
 
@@ -79,20 +88,31 @@ bool DFAProblem::load_from_file(const std::string &filename) {
 }
 
 bool DFAProblem::accepts(const std::string &word) const {
+  // Start at the start state
+  // We use an integer representation for simplicity:
+  //   q0 -> 0, q1 -> 1, q2 -> 2
+  // But we'll map using a lookup approach
   std::string current_state = start_state;
 
+  // Process each character of the input word
   for (char c : word) {
     std::string symbol(1, c); // Convert char to string (e.g., '0' -> "0")
 
+    // Look up the transition in our map
     auto it = transitions.find({current_state, symbol});
 
+    // If no transition is defined for this (state, symbol) pair,
+    // the DFA rejects the word immediately
     if (it == transitions.end()) {
       return false; // Dead state - no transition defined
     }
 
+    // Move to the next state
     current_state = it->second;
   }
 
+  // After processing all symbols, check if we're in an accepting state
+  // The word is accepted if the final state is in the final_states set
   return final_states.count(current_state) > 0;
 }
 
@@ -118,6 +138,7 @@ bool DFAProblem::is_chosen_problem(const cxxopts::ParseResult &args) {
 }
 
 int DFAProblem::run(const cxxopts::ParseResult &args) {
+  // Step 1: Ensure input and output files are provided
   if (!args.count("input") || !args.count("output")) {
     std::cerr << "Error: --input and --output are required for DFAProblem"
               << std::endl;
@@ -128,25 +149,33 @@ int DFAProblem::run(const cxxopts::ParseResult &args) {
   std::string input_file = args["input"].as<std::string>();
   std::string output_file = args["output"].as<std::string>();
 
+  // Step 2: Initialize DFA state machine from the input file
   if (!load_from_file(input_file)) {
-    return 1;
+    return 1; // Error loading file, abort
   }
 
+  // Step 3: Parse and process each comma-separated word
   std::istringstream check_stream(check_words);
   std::string word;
   bool first = true;
 
+  // We read the check string word by word, splitting by commas (',')
   while (std::getline(check_stream, word, ',')) {
+
+    // Step 4: Trim any leading or trailing whitespaces just in case
     size_t start = word.find_first_not_of(" \t\r\n");
     if (start == std::string::npos)
-      continue;
+      continue; // Skip completely empty words
     size_t end = word.find_last_not_of(" \t\r\n");
     word = word.substr(start, end - start + 1);
 
+    // Step 5: Simulate the word through the DFA
     bool acc = accepts(word);
 
+    // Step 6: Write the result to the output file (appends automatically)
     write_result(output_file, word, acc);
 
+    // Step 7: Print the result to the console for user feedback
     if (!first)
       std::cout << std::endl;
     first = false;
@@ -154,5 +183,5 @@ int DFAProblem::run(const cxxopts::ParseResult &args) {
   }
   std::cout << std::endl;
 
-  return 0;
+  return 0; // Success
 }
