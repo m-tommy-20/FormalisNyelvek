@@ -6,11 +6,13 @@
 #include "problem.hpp"
 #include "problems/sum.hpp"
 #include "problems/dfa.hpp"
+#include "problems/determinization.hpp"
 
 int runProblem(int argc, char* argv[]) {
     std::vector<Problem*> problems;
     problems.push_back(new SumProblem());
     problems.push_back(new DFAProblem());
+    problems.push_back(new DeterminizationProblem());
 
     cxxopts::Options options("project", "Run the specific problem");
 

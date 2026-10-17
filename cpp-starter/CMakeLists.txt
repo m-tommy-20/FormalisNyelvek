@@ -9,4 +9,4 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # Add your own problems here
-add_executable(project main.cpp problems/sum.cpp problems/dfa.cpp)
+add_executable(project main.cpp problems/sum.cpp problems/dfa.cpp problems/determinization.cpp)
